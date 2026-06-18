@@ -12,7 +12,7 @@ Checks are registered in a global registry and selected by name via [`validation
 
 - **Per-stream checks** (`required_streams = None`) run independently on every stream.
 - **Multi-stream checks** declare `required_streams = [TrackingSystem.X, ...]`. They run **once** (when the first required stream is processed) and access the others via `session.get_stream(system)`. If any required stream is missing, the check is skipped.
-- A check that **raises an exception** is caught, recorded as a *failed check*, and skipped. The run continues, but a warning notes that the derivative tier may then contain unmasked bad segments.
+- A check that **raises an exception** is caught, recorded as a *failed check*, and skipped. The run continues, but the failure is logged as an error noting that the derivative tier may then contain unmasked bad segments.
 
 Unknown names in `enabled_checks` are silently ignored.
 

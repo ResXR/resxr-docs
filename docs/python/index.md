@@ -38,9 +38,9 @@ flowchart LR
 
 ## Definitions
 
-**Tracking system.** One subsystem of the headset — `Head`, `Hands`, `Eyes`, `Face`, `Body`, or `Controllers`. Each maps to a BIDS `tracksys-` entity with its own motion and channels files. Systems are identified from column-name prefixes and can be enabled or disabled individually.
+**Tracking system.** One subsystem of the headset — `Head`, `Hands`, `Eyes`, `Face`, `Body`, or `Controllers` — each mapped to a BIDS `tracksys-` entity with its own motion and channels files. Systems are identified from column-name prefixes. `Head` is always exported; the others are gated both by the recording's metadata feature flags and by the `systems` block in the [configuration](configuration.md). The bundled config ships with `Body` and `Controllers` **disabled**, so a default run produces `Head`, `Hands`, `Eyes`, and `Face`.
 
-**Output tiers.** Every session is written twice: a **RAW** tier at the dataset root (an exact standardization of the recording, no values changed) and a **DERIVATIVE** tier under `derivatives/resxr/` (the same data after optional quality masking). The raw tier is never modified by preprocessing.
+**Output tiers.** Every session is written to three places: a verbatim **`sourcedata/`** copy of the original recording (untouched, so the inputs always travel with the dataset), a **RAW** tier at the dataset root (an exact standardization of the recording, no values changed), and a **DERIVATIVE** tier under `derivatives/resxr/` (the same data after optional quality masking). Only the derivative tier is ever modified by preprocessing.
 
 **LATENCY channels.** Internal time columns (`timestamp`, `timeSinceStartup`) are not exported verbatim. At export each stream is passed through `prepare_motion_data`, which converts them into BIDS LATENCY channels — `latency` (seconds from the stream's recording onset) and, when a per-system clock is used, `latency_global` (seconds from the global engine clock onset). See [Pipeline Stages](pipeline-stages.md#latency-channels).
 

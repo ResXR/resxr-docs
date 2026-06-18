@@ -47,7 +47,7 @@ python -m resxr -c config/my_study.yaml
 
 ## Dry run
 
-`--dry-run` loads and validates the configuration, then logs the execution plan — the config path, input directory, output directory, number of sessions, and the list of enabled tracking systems. No data is loaded and no output is written.
+`--dry-run` loads and validates the configuration, then logs the execution plan — the config path, input directory, output directory, the number of configured session mappings (shown as `0` when you rely on auto-discovery), and the list of enabled tracking systems. No data is loaded and no output is written.
 
 ```bash
 resxr -c config/pipeline_config.yaml --dry-run
