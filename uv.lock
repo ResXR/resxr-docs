@@ -197,7 +197,7 @@ dev = [
 [package.metadata]
 
 [package.metadata.requires-dev]
-dev = [{ name = "zensical", specifier = ">=0.0.45" }]
+dev = [{ name = "zensical", specifier = "==0.0.45" }]
 
 [[package]]
 name = "tomli"
