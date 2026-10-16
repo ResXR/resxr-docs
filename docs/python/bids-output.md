@@ -81,9 +81,11 @@ One row per column in the matching `motion.tsv`, describing each channel. Column
 | `tracked_point` | The tracked point the channel belongs to (or `n/a` for latency). |
 | `units` | Physical units (`m`, `s`, `boolean`, `normalized`, `n/a`, …). |
 | `sampling_frequency` | The system's nominal (expected) rate. |
-| `reference_frame` | `global` for spatial channels (`POS`/`ORNT`), else `n/a`. |
+| `reference_frame` | `global` for spatial channels (`POS`/`ORNT`), else `n/a`. Hand-joint channels get the frame detected for their hand (below). |
 
 Channel type, component, and units are inferred from each column's name suffix (e.g. `_px/_py/_pz` → POS in metres; `_qx…_qw` → ORNT quaternion; `latency`/`latency_global` → LATENCY in seconds; face blendshapes → MISC, normalized).
+
+**Hand-joint frame.** For each hand, the pipeline compares the Wrist joint (`Left_XRHand_Wrist_*`, `Right_XRHand_Wrist_*`) with the hand root (`LeftHand_Root_*`, `RightHand_Root_*`) on the usable rows (every value finite, neither position all zero). If they match on at least 99% of those rows, that hand's joint channels (`Left_XRHand_*` or `Right_XRHand_*`, `POS`/`ORNT`) get `global`; if they differ only in the sign of z and of the quaternion's x and y, they get `tracking_space`, and `channels.json` describes that level; otherwise `n/a`, with a warning. The values are not changed, and the report names the detected frame.
 
 ## JSON sidecars
 
@@ -99,7 +101,7 @@ Per tracking system. Contains: `TaskName`, `TaskDescription` (from [`system_desc
 
 ### `channels.json`
 
-Describes the coordinate system, from [`bids.reference_frame`](configuration.md#bidsreference_frame):
+Describes the coordinate system, from [`bids.reference_frame`](configuration.md#bidsreference_frame), plus a `tracking_space` level from [`bids.tracking_space_reference_frame`](configuration.md#bidstracking_space_reference_frame) when the hand-joint channels use it:
 
 ```json
 {
@@ -130,7 +132,7 @@ When the input has an events file and/or custom tables, the pipeline writes a si
 sub-01_ses-01_task-VRtracking_events.tsv
 ```
 
-It starts with the BIDS-required `onset`, `duration`, then `name`, followed by the union of all [custom-table](input-data.md#custom-tables) columns. Native event rows carry `n/a` in custom columns and vice versa. The sibling `events.json` documents `onset`, `duration`, `name` (with `Levels` listing observed event names), and every custom column for which a schema description exists (`Description`, `Format`, and optional `Units`/`Levels`/`Minimum`/`Maximum`).
+It starts with the BIDS-required `onset`, `duration`, then `name`, followed by any other columns of the events file and the union of all [custom-table](input-data.md#custom-tables) columns. Native event rows carry `n/a` in custom columns and vice versa. Onsets are in seconds from the session's time zero, the first valid `timeSinceStartup` of the continuous data, where `latency_global` is 0 (the input onsets are on the `timeSinceStartup` clock). A column that `events.json` does not describe is named in a warning. The sibling `events.json` documents `onset`, `duration`, `name` (with `Levels` listing observed event names), and every custom column for which a schema description exists (`Description`, `Format`, and optional `Units`/`Levels`/`Minimum`/`Maximum`).
 
 ## `scans.tsv`
 
@@ -139,11 +141,11 @@ One per session (both tiers). Lists each motion file with its acquisition time:
 | Column | Value |
 | ------ | ----- |
 | `filename` | `motion/<motion filename>` |
-| `acq_time` | The recording's UTC start (`YYYY-MM-DDThh:mm:ss.000`), or `n/a` if unknown. |
+| `acq_time` | The recording's UTC start from `utc_start_iso8601`, as `YYYY-MM-DDThh:mm:ss.ffffffZ` (the recorded fraction of a second, to six digits, and `Z` for UTC), or `n/a` if absent or unparseable. |
 
 ## `participants.tsv` / `participants.json`
 
-Dataset-level. `participants.tsv` has one row per subject — `participant_id`, `age`, `sex`, `handedness` — drawn from the [session mappings](configuration.md#session_mappings) (`n/a` where unset). `participants.json` documents those columns, including the `sex` levels (`M`/`F`) and `handedness` levels (`R`/`L`/`A`).
+Dataset-level. `participants.tsv` has one row per subject (`participant_id`, `age`, `sex`, `handedness`), drawn from the [session mapping](configuration.md#session_mappings) of the subject's first processed session (`n/a` where unset). It lists the subjects with at least one session processed in this run. Every mapping of a subject must give the same values, or the run stops with a [configuration error](configuration.md#configuration-errors). `participants.json` documents those columns, including the `sex` levels (`M`/`F`) and `handedness` levels (`R`/`L`/`A`).
 
 ## `.bidsignore`
 
@@ -153,4 +155,5 @@ Created at the dataset root (only if absent — never overwritten) to keep non-s
 
 - **LF line endings** are forced on all generated TSV/JSON files, so output is byte-reproducible across operating systems.
 - **Full float precision** is preserved in `motion.tsv` (no rounding).
-- **`sourcedata/`** is a verbatim copy of the input session folder (including the `CustomTables/` subfolder), so the original recording always travels with the dataset. It is not re-copied if already present unless `output.overwrite` is set.
+- **`sourcedata/`** is a verbatim copy of the input session folder (including the `CustomTables/` subfolder), so the original recording always travels with the dataset. An existing, non-empty copy is kept unless `output.overwrite` is `true`; then the input is copied over it, and files no longer in the input stay (see [`output`](configuration.md#output)). A session read from its own `sourcedata/` copy (reprocessing from the copies) is not copied onto itself.
+- **Skipped sessions** leave none of their files in the output; see [Skipped sessions](pipeline-stages.md#skipped-sessions).
