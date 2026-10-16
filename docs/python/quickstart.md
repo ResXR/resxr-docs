@@ -38,7 +38,7 @@ session_mappings:
 ```
 
 !!! tip "Auto-discovery"
-    If you leave `session_mappings` empty, the pipeline discovers every subfolder of `data_dir` that contains a metadata file and numbers the subjects automatically (`sub-01`, `sub-02`, …). Explicit mappings give you control over IDs and let you attach `age`, `sex`, and `handedness`.
+    If you leave `session_mappings` empty, the pipeline discovers every direct subfolder of `data_dir` that contains a metadata file and numbers the subjects automatically (`sub-01`, `sub-02`, …). Explicit mappings give you control over IDs and let you attach `age`, `sex`, and `handedness`.
 
 See the [Configuration Reference](configuration.md) for every available option.
 

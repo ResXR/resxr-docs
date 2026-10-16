@@ -87,7 +87,7 @@ Full details and the catalog of built-in checks: [Validation & Quality Checks](v
 `preprocess_stream(stream, apply_masking, masking_checks)` produces each stream's `clean_data`:
 
 - With `apply_quality_masking: false` (the default), `clean_data` is simply a copy of the raw data.
-- With masking **on**, every flag marked maskable (optionally filtered to `masking_checks`) is applied: the flagged time ranges are set to `NaN` — either across the whole row or only the flag's `target_columns`. **All rows are preserved**; time columns are never masked. Integer/boolean columns are widened to nullable dtypes so they can hold `NaN`.
+- With masking **on**, every flag marked maskable (optionally filtered to `masking_checks`) is applied: the flagged time ranges are set to `NaN`, either across the whole row or only in the flag's `target_columns`. **All rows are preserved**; the `timestamp` and `timeSinceStartup` columns are never masked. Integer/boolean columns are widened to nullable dtypes so they can hold `NaN`.
 
 Masking only affects the **derivative** tier. The raw tier is written from the unmodified `data`.
 

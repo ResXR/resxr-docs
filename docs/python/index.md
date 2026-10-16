@@ -38,7 +38,7 @@ flowchart LR
 
 ## Definitions
 
-**Tracking system.** One subsystem of the headset — `Head`, `Hands`, `Eyes`, `Face`, `Body`, or `Controllers` — each mapped to a BIDS `tracksys-` entity with its own motion and channels files. Systems are identified from column-name prefixes. `Head` is always exported; the others are gated both by the recording's metadata feature flags and by the `systems` block in the [configuration](configuration.md). The bundled config ships with `Body` and `Controllers` **disabled**, so a default run produces `Head`, `Hands`, `Eyes`, and `Face`.
+**Tracking system.** One subsystem of the headset (`Head`, `Hands`, `Eyes`, `Face`, `Body`, or `Controllers`), each mapped to a BIDS `tracksys-` entity with its own motion and channels files. Systems are identified from column-name prefixes. `Head` has no metadata feature flag, so it is exported whenever the data have Head columns and the `systems` block does not disable it; the others are gated both by the recording's metadata feature flags and by the `systems` block in the [configuration](configuration.md). The bundled config ships with `Body` and `Controllers` **disabled**, so a default run produces `Head`, `Hands`, `Eyes`, and `Face`.
 
 **Output tiers.** Every session is written to three places: a verbatim **`sourcedata/`** copy of the original recording (untouched, so the inputs always travel with the dataset), a **RAW** tier at the dataset root (an exact standardization of the recording, no values changed), and a **DERIVATIVE** tier under `derivatives/resxr/` (the same data after optional quality masking). Only the derivative tier is ever modified by preprocessing.
 
