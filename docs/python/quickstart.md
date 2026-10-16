@@ -44,13 +44,13 @@ See the [Configuration Reference](configuration.md) for every available option.
 
 ## 2. Validate before running (dry run)
 
-A dry run loads and validates your configuration, then prints the plan — input dir, output dir, number of sessions, and which tracking systems are enabled — **without writing anything**.
+A dry run loads your configuration and runs the same checks as a real run (including that `data_dir` exists), then prints the plan: input dir, output dir, number of session mappings (`0` with auto-discovery), and which tracking systems are enabled. It reads no session data and **writes nothing**.
 
 ```bash
 resxr -c config/pipeline_config.yaml --dry-run
 ```
 
-If the config has an error, this is where you'll catch it.
+If the config has an error, this is where you'll catch it: the run would stop with the same `Configuration error in <config path>: ...` message before reading any session ([Configuration errors](configuration.md#configuration-errors)).
 
 ## 3. Run the pipeline
 
@@ -70,7 +70,7 @@ If the config has an error, this is where you'll catch it.
     resxr.run(config_path="config/pipeline_config.yaml")
     ```
 
-The pipeline processes each session through all six stages. If one session fails, it is logged and the run continues with the rest.
+The pipeline processes each session through all six stages. If one session fails, it is logged and skipped, its partial output is removed, and the run continues with the rest. The run ends with a [summary](cli.md#run-summary) of every session; the command exits `0` only when every session found was processed.
 
 ## 4. Inspect the output
 

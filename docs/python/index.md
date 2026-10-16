@@ -42,7 +42,7 @@ flowchart LR
 
 **Output tiers.** Every session is written to three places: a verbatim **`sourcedata/`** copy of the original recording (untouched, so the inputs always travel with the dataset), a **RAW** tier at the dataset root (an exact standardization of the recording, no values changed), and a **DERIVATIVE** tier under `derivatives/resxr/` (the same data after optional quality masking). Only the derivative tier is ever modified by preprocessing.
 
-**LATENCY channels.** Internal time columns (`timestamp`, `timeSinceStartup`) are not exported verbatim. At export each stream is passed through `prepare_motion_data`, which converts them into BIDS LATENCY channels — `latency` (seconds from the stream's recording onset) and, when a per-system clock is used, `latency_global` (seconds from the global engine clock onset). See [Pipeline Stages](pipeline-stages.md#latency-channels).
+**LATENCY channels.** Internal time columns (`timestamp`, `timeSinceStartup`) are not exported verbatim. At export each stream is passed through `prepare_motion_data`, which converts them into BIDS LATENCY channels: `latency` (seconds from the onset of the stream's clock, or from the session's time zero for a stream timed by the global engine clock alone) and, when a per-system clock is used, `latency_global` (seconds from the session's time zero, the first valid global engine clock value in the continuous data). See [Pipeline Stages](pipeline-stages.md#latency-channels).
 
 **Software/version capture.** Software and version metadata is captured from any `*version*` key in the session metadata, so a new headset or engine generally requires no code changes. See [Input Data Format](input-data.md#software-and-version-metadata).
 
