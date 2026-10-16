@@ -47,7 +47,7 @@ python -m resxr -c config/my_study.yaml
 
 ## Dry run
 
-`--dry-run` reads the configuration and runs the same checks as a run (see [Configuration errors](configuration.md#configuration-errors)), including that `input.data_dir` is an existing folder. If they pass, it logs `Configuration valid: <config path>` and the execution plan: the input directory, the output directory, the number of configured session mappings (shown as `0` when you rely on auto-discovery), and the systems set to `enabled: true` under `systems`. No session data is loaded and no output is written. A configuration error is logged as `Configuration error in <config path>: ...`, as in a run, and the exit code is `1`.
+`--dry-run` reads the configuration and runs the same checks as a run (see [Configuration errors](configuration.md#configuration-errors)), including that `input.data_dir` is an existing folder. If they pass, it logs `Configuration valid: <config path>` and the execution plan: the input directory, the output directory, the number of configured session mappings (shown as `0` when you rely on auto-discovery), and the systems set to `enabled: true` under `systems`. No session data is loaded and no output is written. Failures are reported as in a run: a configuration error as `Configuration error in <config path>: ...`, any other failure as `Pipeline failed: ...` (with its traceback under `-v`), both with exit code `1`; `Ctrl-C` gives exit code `130`.
 
 ```bash
 resxr -c config/pipeline_config.yaml --dry-run
@@ -71,8 +71,8 @@ The warning and error counts are the WARNING and ERROR messages logged while tha
 | Code | Meaning |
 | ---- | ------- |
 | `0` | Every session found was processed, or the dry run found the configuration valid. |
-| `1` | A session was skipped, no session was found, the config file was not found, the configuration is invalid, or an error outside the sessions stopped the run (`Pipeline failed: ...`). |
-| `130` | Interrupted (`Ctrl-C`). The output the interrupted session had written is removed first. |
+| `1` | A session was skipped, no session was found, the config file was not found, the configuration is invalid, or an error outside the sessions stopped the run or the dry run (`Pipeline failed: ...`). |
+| `130` | Interrupted (`Ctrl-C`), also during `--dry-run`. In a run, the output the interrupted session had written is removed first. |
 
 !!! tip "One bad session won't stop the run"
     A session that cannot be processed is logged as `Failed to process <source_dir>: <reason>` and skipped, and the run continues with the others; what the run had written for it is removed (see [Skipped sessions](pipeline-stages.md#skipped-sessions)). An unexpected error inside a session (one that is not a `ResXRError`) is handled the same way, with the reason `unexpected error: <type>: <message>`; run with `-v` to see its traceback. The run then exits `1`.
