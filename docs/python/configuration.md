@@ -250,7 +250,7 @@ settings:
   eyes_closed_threshold: 0.9
   eyes_closed_min_duration: 0.1
   check_column_groups:
-    my_check:            # a custom check (see Validation → Writing a custom check)
+    my_check:            # a custom check; the groups are defined under column_groups above
       - "Left Hand"
       - "Right Hand"
 ```
