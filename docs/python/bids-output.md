@@ -122,7 +122,7 @@ Describes the coordinate system, from [`bids.reference_frame`](configuration.md#
 ### `dataset_description.json`
 
 - **Raw** (root): `Name`, `BIDSVersion`, `DatasetType` (`raw`), `License`, and `Authors` (if any).
-- **Derivative**: `Name` suffixed `(preprocessed)`, `DatasetType: derivative`, `GeneratedBy: [{"Name": "ResXR"}]`.
+- **Derivative** (`derivatives/resxr/`): `Name` suffixed `(preprocessed)`, `BIDSVersion`, `DatasetType: derivative`, `License` (the same `bids.license`), and `GeneratedBy: [{"Name": "ResXR"}]`.
 
 ## Events
 
