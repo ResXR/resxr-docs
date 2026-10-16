@@ -6,7 +6,7 @@ icon: lucide/bar-chart-3
 
 When [`report.enabled`](configuration.md#report) is true, the pipeline writes one HTML quality report per session.
 
-The file is written to `<session_dir>/<session_id>_report.html` by default, or to `report.output_dir` if set. It is a single standalone HTML file: plotly.js is embedded in it, so the report loads nothing from the internet.
+The file is written to `<session_dir>/<session_id>_report.html` by default, or to `report.output_dir` if set. It is a single standalone HTML file: plotly.js is embedded in it, and the page links no external script or style sheet, so it opens without an internet connection.
 
 !!! note "Reports are not BIDS files"
     The report is a convenience artifact, not part of the BIDS spec, so it is listed in `.bidsignore` and excluded from BIDS validation.
