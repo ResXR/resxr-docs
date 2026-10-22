@@ -48,6 +48,8 @@ The BIDS dataset is written to `output.bids_root`. `run` raises a `Configuration
 
 Each `SessionOutcome` has `source_dir`, `subject_id`, `session_label`, `processed`, `reason` (why a skipped session was skipped), `warnings` and `errors` (the WARNING and ERROR messages logged while the session was processed; warnings are not counted when logging shows errors only, as with `-q`), and `checks_not_run` (a list of `CheckNotRun` with `check`, `stream` and `reason`). The same information is logged as the [run summary](cli.md#run-summary).
 
+Called from Python without logging configured, `run` prints the WARNING and ERROR messages to standard error (the message text only). To see the progress (INFO) lines too, configure logging first, for example `logging.basicConfig(level=logging.INFO)`; each message is then printed once, through that configuration.
+
 ## `PipelineConfig`
 
 The validated configuration. Load it from YAML to inspect or build on:
@@ -61,7 +63,7 @@ print(config.output.bids_root)
 print([name for name, sys in config.systems.items() if sys.enabled])
 ```
 
-`from_yaml(path)` raises a `ConfigurationError` if the file is missing, unparseable, empty, or fails validation (a missing required key, a wrong type, or a key the configuration does not define). The further checks of a run (check and tracking-system names, settings keys, labels, session mappings, `input.data_dir`) are in `resxr.pipeline.load_config(path)`, which `run` and `--dry-run` call. See the [Configuration Reference](configuration.md) for every field. Helpers include `is_system_enabled(name)` and, on the `validation` sub-config, `get_column_groups(check_name, default_columns=...)`.
+`from_yaml(path)` raises a `ConfigurationError` if the file is missing, unparseable, empty, or fails validation (a missing required key, a wrong type, or a key the configuration does not define). The further checks of a run (check and tracking-system names, settings keys, labels, session mappings, `input.data_dir`) are in `resxr.pipeline.load_config(path)`, which `run` and `--dry-run` call. See the [Configuration Reference](configuration.md) for every field. Helpers include `is_system_enabled(name)` and, on the `validation` sub-config, `get_column_groups(check_name, default_columns=...)`. The models of the sections (for example `BIDSConfig`, `ReferenceFrameConfig` and `TrackingSpaceFrameConfig`) can be imported from `resxr.core`.
 
 ## Core data structures
 
@@ -73,7 +75,7 @@ An enum of the supported systems: `HEAD`, `HANDS`, `EYES`, `FACE`, `BODY`, `CONT
 
 ### `Session`
 
-The per-recording carrier. Key attributes: `session_id`, `subject_id`, `session_label`, `metadata`, `streams` (`dict[TrackingSystem, TrackingStream]`), the `raw_*_data` frames, `custom_tables`/`custom_tables_data`, and `merged_events_data`. Useful members:
+The per-recording carrier. Key attributes: `session_id`, `subject_id`, `session_label`, `metadata`, `streams` (`dict[TrackingSystem, TrackingStream]`), the `raw_*_data` frames, `custom_tables`/`custom_tables_data`, `motion_time_zero` (the first valid `timeSinceStartup` of the continuous data, from which `latency_global` and the event onsets count), and `merged_events_data`. Useful members:
 
 | Member | Returns |
 | ------ | ------- |
@@ -87,7 +89,7 @@ The per-recording carrier. Key attributes: `session_id`, `subject_id`, `session_
 
 ### `TrackingStream`
 
-One system's data. Attributes include `system`, `data` (raw), `clean_data` (post-masking), `quality_flags`, `sampling_frequency` (expected), `sampling_frequency_effective` (measured), and `channel_count`. Useful properties: `duration_seconds`, `row_count`, `warning_count`/`error_count`, and `get_output_data()` (returns `clean_data` if set, else `data`).
+One system's data. Attributes include `system`, `data` (raw), `clean_data` (post-masking), `quality_flags`, `sampling_frequency` (expected), `sampling_frequency_effective` (measured), and `channel_count`. Useful properties: `duration_seconds`, `row_count`, `warning_count`/`error_count`, and `get_output_data()` (returns `clean_data` if set, else `data`). `sample_times()` returns the stream's samples: the distinct finite, non-zero values of its clock from the recording onset, from which the effective rate and the [`sampling_rate`](validation.md#sampling_rate) check's irregularity test are computed.
 
 ### `QualityFlag`
 
