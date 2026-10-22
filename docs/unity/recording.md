@@ -29,7 +29,7 @@ Most toggles live in the **What to record (ContinuousData)** group on `ResXRData
     The face collector records ~70 **expression weights** — numeric activations (0–1) of individual facial movements such as a brow raise or a jaw drop, following Meta's Face Tracking set. (A *blendshape* is the mesh deformation each weight would drive on an avatar.) They are written to the dedicated face file, not the continuous file.
 
 !!! warning "Body tracking is an estimate, not a body sensor"
-    Quest headsets have no body sensor. With `Include Body` on, Meta's SDK *infers* an upper-body skeleton from head and hand poses for smooth avatar animation — it is not ground-truth motion capture. The template ships with it on, but the in-editor tooltip recommends leaving it **off** unless your analysis genuinely needs the estimated joints. Treat body joints accordingly.
+    Quest headsets have no body sensor. With `Include Body` on, Meta's SDK *infers* an upper-body skeleton from head and hand poses for smooth avatar animation — it is not ground-truth motion capture. Body is off in the `ResXR_DataManager` prefab and in Base Scene, and on in Base Scene With Meta Interactions, the scene enabled for builds by default; the in-editor tooltip recommends leaving it **off** unless your analysis genuinely needs the estimated joints. Treat body joints accordingly.
 
 ### Enabling a subsystem
 
