@@ -58,3 +58,9 @@ resxr.run(config_path="config/pipeline_config.yaml")   # programmatic
 ```
 
 All behavior is driven by a single [YAML configuration file](configuration.md).
+
+## How to cite
+
+Cite the version you used. Release v0.2.2 is archived on Zenodo with the DOI [10.5281/zenodo.23562103](https://doi.org/10.5281/zenodo.23562103). The concept DOI [10.5281/zenodo.23562102](https://doi.org/10.5281/zenodo.23562102) covers all archived versions and resolves to the latest one. The repository's [`CITATION.cff`](https://github.com/ResXR/resxr-python-pipeline/blob/main/CITATION.cff) gives the authors and the version. In APA style:
+
+> Bergstein, Y., Barel, N., Shai Basson, G., Bromberg, O., & Schonberg, T. (2026). *ResXR Python Pipeline* (Version 0.2.2) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.23562103
