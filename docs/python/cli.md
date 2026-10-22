@@ -70,7 +70,7 @@ The warning and error counts are the WARNING and ERROR messages logged while tha
 
 | Code | Meaning |
 | ---- | ------- |
-| `0` | Every session found was processed, or the dry run found the configuration valid. |
+| `0` | Every session found was processed, or the dry run found the configuration valid. A session in which a check did not run (including a check that failed) counts as processed: the check is listed in the run summary, and with masking on it masks nothing ([Checks not run](validation.md#checks-not-run)). |
 | `1` | A session was skipped, no session was found, the config file was not found, the configuration is invalid, or an error outside the sessions stopped the run or the dry run (`Pipeline failed: ...`). |
 | `130` | Interrupted (`Ctrl-C`), also during `--dry-run`. In a run, the output the interrupted session had written is removed first. |
 
