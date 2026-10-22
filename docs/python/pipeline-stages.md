@@ -14,14 +14,16 @@ The entry point `run(config_path)` does the following:
 2. Builds a `BIDSLayout` rooted at `output.bids_root`.
 3. Determines the sessions to process — from `session_mappings`, or by auto-discovery if none are given.
 4. Processes each session through all six stages (below).
-5. After all sessions, writes the **dataset-level files** (`dataset_description.json`, `participants.tsv`/`.json`, `README`, `.bidsignore`, and the derivative dataset description), if at least one session was processed. `participants.tsv` has one row per subject, from its first processed session.
+5. After all sessions, writes the **dataset-level files** (`dataset_description.json`, `participants.tsv`/`.json`, `README`, `.bidsignore`, and the derivative dataset description), if at least one session was processed. `participants.tsv` has one row per subject, from its first processed session, and lists only the subjects processed in this run; when `bids_root` holds `sub-*` folders it does not list (for example from an earlier run), a warning names them.
 6. Logs the [run summary](cli.md#run-summary) and returns a [`RunResult`](api.md#run).
 
 Each session is processed independently. If a session cannot be processed (any error, including an unexpected one), it is **logged and skipped** as `Failed to process <source_dir>: <reason>`, and processing continues with the next: one bad recording doesn't abort the batch.
 
 ### Skipped sessions
 
-A skipped session leaves none of its files in the output. What the run had written for it (its `sourcedata/` copy, its raw and derivative session folders and its report) is removed, together with the `sub-*`, `sourcedata/`, `derivatives/resxr/` and `derivatives/` folders it created and left empty, and an info line names what was removed. Files marked read-only are removed too. A session folder or report that existed before the session started (a rerun into an existing output) is kept, with one warning each: that it may now hold partial files, or, when the session did not write into it, that it holds output of an earlier run. A kept folder that is, holds or lies inside a session's input folder (as when the session is read from its copy in `sourcedata/`) gets no such warning. Nothing outside the BIDS root and `report.output_dir` is removed, nor anything that is, holds or lies inside a session's input folder. A folder that cannot be checked or removed gives a warning naming it, and the run continues. A session interrupted with `Ctrl-C` is cleaned up the same way before the run stops.
+A skipped session leaves none of its files in the output. What the run had written for it (its `sourcedata/` copy, its raw and derivative session folders and its report) is removed, together with the `sub-*`, `sourcedata/`, `derivatives/resxr/` and `derivatives/` folders it created and left empty, and an info line names what was removed. Files marked read-only are removed too. A session folder or report that existed before the session started (a rerun into an existing output) is kept, with one warning each: that it may now hold partial files, or, when the session did not write into it, that it holds output of an earlier run. A kept folder that is, holds or lies inside a session's input folder (as when the session is read from its copy in `sourcedata/`, or when the output folders are the input folders) gets no warning when the session did not write into it, and otherwise a warning to remove the partial files, not the input. Nothing outside the BIDS root and `report.output_dir` is removed, nor anything that is, holds or lies inside a session's input folder, nor the data directory or a folder above it. A folder or report whose existence cannot be checked counts as existing, so it is kept, with a warning naming it; a folder that cannot be checked or removed during the cleanup also gives a warning, and the run continues. A session interrupted with `Ctrl-C` is cleaned up the same way before the run stops.
+
+Before anything is written, a session is skipped with an error when one of its output folders lies inside a mapped session's input folder (its own or another's), or is or holds another mapped session's input folder, because writing there would mix or copy into that input: for example, reprocessing from `sourcedata/` with swapped subject labels, or a `bids_root` inside a session's own folder. The error names the output folder, the input folder and how they relate. A session's own input folder may itself be one of its output folders (reprocessing from its own `sourcedata/` copy).
 
 ### The Session object
 
@@ -33,6 +35,7 @@ Everything about one recording is carried by a `Session`. As the stages run, the
 | `raw_continuous_data`, `raw_face_data`, `raw_events_data` | Load | The source DataFrames. |
 | `custom_tables`, `custom_tables_data` | Load | Custom-table schema and per-table DataFrames. |
 | `streams` | Split | `dict[TrackingSystem, TrackingStream]` — the per-system data. |
+| `motion_time_zero` | Split | The session's time zero: the first valid `timeSinceStartup` of the continuous data ([LATENCY channels](#latency-channels)). |
 | `merged_events_data` | Validate | Events merged with custom tables. |
 | `checks_not_run` | Validate | Enabled checks that produced no result for a stream, with the reason ([Checks not run](validation.md#checks-not-run)). |
 | `subject_id`, `session_label` | Load | BIDS identifiers from the session mapping. |
@@ -103,7 +106,7 @@ Also written: per-session `scans.tsv` (one row per motion file, with the recordi
 
 ### LATENCY channels
 
-The recorder's internal time columns are never exported as-is. `prepare_motion_data(df)` converts them into BIDS **LATENCY** channels:
+The recorder's internal time columns are never exported as-is. `prepare_motion_data(df, time_zero=session.motion_time_zero)` converts them into BIDS **LATENCY** channels:
 
 - **`latency`**: `timestamp` minus an onset, inserted as the first column. For a stream with a per-system clock, the onset is that clock's first valid (finite, non-zero) value; for a stream timed by `timeSinceStartup` alone, it is the session's time zero (below).
 - **`latency_global`**: present **only when** a per-system time column was used (so `timeSinceStartup` exists separately). It is `timeSinceStartup` minus the session's time zero, inserted right after `latency`.
@@ -133,7 +136,7 @@ flowchart LR
 
 ## 6. Report
 
-If `report.enabled` is true, an interactive HTML report is generated per session at `<session_dir>/<session_id>_report.html`. It summarizes the session, lists any checks that did not run, and shows per-stream statistics and a Plotly timeline of all quality flags, with flag times converted to a single onset-relative global timeline.
+If `report.enabled` is true, an interactive HTML report is generated per session at `<session_dir>/<session_id>_report.html`, or in `report.output_dir` when it is set. It summarizes the session, lists any checks that did not run, and shows per-stream statistics and a Plotly timeline of all quality flags, with flag times converted to a single onset-relative global timeline.
 
 See [Quality Reports](reports.md).
 
