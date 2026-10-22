@@ -21,6 +21,8 @@ An unknown name in `enabled_checks` is a [configuration error](configuration.md#
 
 An enabled check that produced no result for a stream is recorded with the check, the stream and the reason: its stream is absent although it was expected (the reason says why, e.g. `the session has no Face stream (metadata: face_enabled is true; no face file was loaded)`), a column it reads is missing or holds values it cannot read, the stream has no separate `timeSinceStartup` column, or the check failed. Each case is logged when it happens and listed in the [run summary](cli.md#run-summary) (which is then a warning), in the session's `checks_not_run` in the [`RunResult`](api.md#run), and in the report's "Checks not run" section ([Quality Reports](reports.md#what-the-report-contains)).
 
+A check that did not run does not skip the session: its data are exported, and the exit code stays `0` when every session was processed. With [quality masking](pipeline-stages.md#4-preprocess) on, such a check masks nothing.
+
 ## Quality flags
 
 Each flag is a `QualityFlag` with:
@@ -36,7 +38,7 @@ Each flag is a `QualityFlag` with:
 | `group_name` | Optional label (e.g. `"left_hand"`). |
 | `target_columns` | Columns the flag applies to. **Empty = the whole row**; non-empty = only those columns. |
 
-Flags are built from a boolean mask over the timestamps; contiguous `True` runs become one flag each. The mask is automatically restricted to the recording window (onset → last valid sample), so leading/trailing zero-padding never produces spurious flags.
+Flags are built from a boolean mask over the timestamps; contiguous `True` runs become one flag each. The mask is automatically restricted to the recording window (onset → last valid sample), so leading/trailing zero-padding never produces spurious flags. Rows whose time is zero or not finite are also left out of the mask, so a flag never starts or ends on such a row, and one inside a flagged stretch splits it into two flags.
 
 !!! info "Times are in the global clock"
     Flag bounds are stored in `timeSinceStartup` space so that masking and the report line up across streams that use different per-system clocks. The report shifts them to a shared onset-relative timeline.
@@ -67,8 +69,8 @@ Validates timing consistency. Purely informational — its flags are **not** mas
 
 - **Scope:** every stream (`required_streams = None`).
 - **Logic:** two independent tests on the stream's own clock (its per-system clock column), from the recording onset (the clock's first non-zero value):
-    1. **Rate mismatch**: flags if `|effective − expected| / expected` exceeds `sampling_rate_tolerance` (default `0.10`). The effective rate is the number of distinct clock values at or above the onset, minus one, divided by the time they span.
-    2. **Irregular sampling**: flags if the coefficient of variation of the intervals between the stream's samples (its distinct finite, non-zero clock values at or above the onset) exceeds `sampling_cv_threshold` (default `0.50`). The intervals between rows on `timeSinceStartup` are not used.
+    1. **Rate mismatch**: flags if `|effective − expected| / expected` exceeds `sampling_rate_tolerance` (default `0.10`). The effective rate is the number of the stream's samples (its distinct finite, non-zero clock values at or above the onset, `TrackingStream.sample_times()`), minus one, divided by the time they span.
+    2. **Irregular sampling**: flags if the coefficient of variation of the intervals between the same samples exceeds `sampling_cv_threshold` (default `0.50`). The intervals between rows on `timeSinceStartup` are not used.
 - **Emits:** `severity = warning`, `mask = false`, spanning the whole valid window on `timeSinceStartup`.
 
 ### `eyes_closed`
