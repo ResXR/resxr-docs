@@ -43,7 +43,7 @@ The experiment plays its flow: instructions, then trials. When the session's `En
 
 ## 4. Find the recorded files
 
-Each run creates one session folder named with a UTC timestamp, `yyyy.MM.dd_HH-mm` (for example `2026.06.16_09-55`). The full path is printed to the console at startup. Where it is written depends on where you ran:
+Each run creates one session folder named with a UTC timestamp, `yyyy.MM.dd_HH-mm` (for example `2026.06.16_09-55`). `ResXRDataManager.Instance.GetOutputDirectory()` returns the current session's folder. Where it is written depends on where you ran:
 
 === "On the headset (build)"
 
@@ -57,7 +57,9 @@ Each run creates one session folder named with a UTC timestamp, `yyyy.MM.dd_HH-m
 
 === "In the editor"
 
-    A temporary folder, `…/Temp/ResXR_EditorLogs/<sessionTime>/`, unless you tick **Export In Editor** on `ResXRDataManager` and set a **Save File Path**, in which case it writes there.
+    `Application.persistentDataPath` too, because the template ships with **Export In Editor** off on `ResXRDataManager`. In the Windows editor this is usually `%userprofile%\AppData\LocalLow\<companyname>\<productname>\<sessionTime>\` (company and product name from the Player settings; Unity's [`Application.persistentDataPath`](https://docs.unity3d.com/ScriptReference/Application-persistentDataPath.html) page lists the other platforms).
+
+    Tick **Export In Editor** to write elsewhere: to the **Save File Path** you set, or, if it is empty, to `ResXR_EditorLogs/<sessionTime>/` in the system's temporary folder (the one .NET's `Path.GetTempPath()` returns).
 
 Inside the session folder you will find `*_ContinuousData.csv`, `*_SessionMetadata.json`, `*_Events.csv`, and a `*_CustomTables/` subfolder. See [Data Output](data-output.md) for the full layout, then feed the folder to the [Python pipeline](../python/quickstart.md).
 
