@@ -87,14 +87,14 @@ Without an events file the session is still processed: an info line says so, or 
 
 `*_SessionMetadata.json` describes the recording. It must hold a JSON object; a file that is not valid JSON or not an object skips the session. Fields are read with fallbacks, and a value that departs from the contract is reported. Captured fields include:
 
-- **Identity & timing** — `session_id`, `utc_start_iso8601` (parsed to a UTC datetime; a trailing `Z` is handled), `device_utc_offset`, `sampling_mode`, `fixedDeltaTime` (the pipeline falls back to `0.02` s, with a warning, if the key is absent or not a number; the value is shown only in the report header; the ResXR recorder writes the real value, typically `0.01` s / 100 Hz), `schema_rev`.
-- **Feature flags** — `face_enabled`, `body_enabled`, `hands_enabled`, `eyes_enabled`, `controllers_enabled`. These gate which systems are split out.
+- **Identity & timing**: `session_id`, `utc_start_iso8601` (read as a UTC time: a time with an offset such as `+03:00` is converted to UTC, and a time with a trailing `Z` or without an offset is taken as UTC), `device_utc_offset`, `sampling_mode`, `fixedDeltaTime` (the pipeline falls back to `0.02` s, with a warning, if the key is absent or not a number; the value is shown only in the report header; the ResXR recorder writes the real value, typically `0.01` s / 100 Hz), `schema_rev`.
+- **Feature flags**: `face_enabled`, `body_enabled`, `hands_enabled`, `eyes_enabled`, `controllers_enabled`. These gate which systems are split out.
+- **Schema counts**: `schema_hand_bones`, `schema_body_joints`, `schema_face_expressions` (with legacy `detected_*` fallbacks).
+- **Device**: `platform`, `build_id`, `device_serial_number`.
 
 `session_id` is the prefix of the session's file names: it names the report and the [custom-tables](#custom-tables) folder. If it is missing, `null`, empty or not text, a warning says so and `unknown` is used. A `session_id` may hold only letters (A-Z, a-z), digits, `.`, `_` and `-`; any other character skips the session with an error when the metadata is read, before anything is written. An unparseable `utc_start_iso8601` is a warning, and `acq_time` in `scans.tsv` is then `n/a`.
 
 Each feature flag must be JSON `true` or `false`. The strings `"true"` and `"false"` (any case) are converted with a warning; any other value reads as `false` with a warning. A missing key also reads as `false`, with a warning when the stream has data. Only a JSON `false` turns the stream off on purpose, so a check that needs it is not listed as [not run](validation.md#checks-not-run); with a missing key or any other value (including the string `"false"`), the stream counts as expected and the check is listed.
-- **Schema counts** — `schema_hand_bones`, `schema_body_joints`, `schema_face_expressions` (with legacy `detected_*` fallbacks).
-- **Device** — `platform`, `build_id`, `device_serial_number`.
 
 ### Software and version metadata
 
@@ -129,13 +129,13 @@ Two time concepts run through the pipeline:
 - **`timestamp`** — the canonical per-stream time axis. By default this is the global engine clock (`timeSinceStartup` renamed). If you configure an [alternate per-system time column](configuration.md#preprocessing) (e.g. `Node_HandLeft_Time` for Hands), that column becomes the stream's `timestamp` instead.
 - **`timeSinceStartup`** — the global engine clock, preserved alongside `timestamp` whenever a per-system time column is in use.
 
-Neither column is written to BIDS verbatim. At export they become the BIDS [LATENCY channels](pipeline-stages.md#latency-channels) `latency` and `latency_global`. Validation flags are placed only between the first and the last non-zero value of the clock, so leading/trailing zero-padding rows never produce flags, and the report shows flag times relative to the **recording onset**, the first non-zero `timeSinceStartup`.
+Neither column is written to BIDS verbatim. At export they become the BIDS [LATENCY channels](pipeline-stages.md#latency-channels) `latency` and `latency_global`. Validation flags are placed only between the first and the last non-zero value of the clock, so leading/trailing zero-padding rows never produce flags, and a flag never starts or ends on a row whose `timeSinceStartup` is zero or not finite (such a row inside a flagged stretch splits the flag). The report shows flag times relative to the **recording onset**, the first non-zero `timeSinceStartup`.
 
 ### Checks on the clocks
 
-The pipeline checks `timeSinceStartup` in the continuous and face files when it reads them, and never changes it: rows are not sorted, values are not converted, and nothing is interpolated. Leading and trailing zero rows are allowed.
+The pipeline checks `timeSinceStartup` in the continuous and face files when it reads them, and never changes it: rows are not sorted, values are not converted, and nothing is interpolated.
 
-- **Warnings:** values that step backward (counted); empty, NaN or infinite cells (counted; their global latency is `n/a`); zero values between valid values (counted; also `n/a`); only one row with a finite, non-zero value (the global latency of the other rows is then `n/a`, and steps and gaps cannot be checked); and a median step above 0.5 s, which suggests milliseconds or a recording slower than 2 Hz. A continuous file with no such value skips the session.
+- **Warnings:** values that step backward (counted); empty, NaN or infinite cells (counted; their global latency is `n/a`); zero values before the first or after the last valid value (one warning per file with both counts: their global latency is `n/a`, and no quality check or masking covers those rows); zero values between valid values (counted; also `n/a`); only one row with a finite, non-zero value (the global latency of the other rows is then `n/a`, and steps and gaps cannot be checked); and a median step above 0.5 s, which suggests milliseconds or a recording slower than 2 Hz. A continuous file with no such value skips the session.
 - **Gaps** (an info line per file, not a warning): steps longer than 10 times the expected Head interval, one over `sampling_frequencies.Head` (with the shipped 72 Hz, steps longer than about 0.14 s), or 10 times the median step when no Head rate is configured. The line gives the number of gaps and the longest one, with the `timeSinceStartup` value where it starts. Shorter gaps are not reported, and there is no gap line when the column looks like milliseconds.
 
 Each per-system clock column a stream uses ([`alternate_time_columns`](configuration.md#alternate_time_columns); in the face file, the configured Face clock such as `Face_Time`) is checked for milliseconds (a median step between distinct values above 0.5 s) and for backward steps, with warnings naming the column. Its empty or zero cells are not logged; the [`clock_dropout`](validation.md#clock_dropout) check flags those between valid values.
