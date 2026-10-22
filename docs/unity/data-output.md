@@ -30,7 +30,7 @@ Files are written under the device's persistent data path, in a subfolder named 
         └── 2026.06.16_09-55_<ClassName>.csv      # one per custom data class
 ```
 
-The timestamp prefix is identical for every file in a session. On the headset `{persistentDataPath}` resolves to `/sdcard/Android/data/<bundle.id>/files/`; in the editor it defaults to a temporary folder unless you enable **Export In Editor** (see [Quickstart](quickstart.md#4-find-the-recorded-files)).
+The timestamp prefix is identical for every file in a session. On the headset `{persistentDataPath}` resolves to `/sdcard/Android/data/<bundle.id>/files/`. The template ships with **Export In Editor** off on `ResXRDataManager`, so a session run in the editor is written to Unity's [`Application.persistentDataPath`](https://docs.unity3d.com/ScriptReference/Application-persistentDataPath.html) as well (in the Windows editor, usually `%userprofile%\AppData\LocalLow\<companyname>\<productname>`). With **Export In Editor** on, the editor writes to the **Save File Path** you set, or, if it is empty, to `ResXR_EditorLogs/` in the system's temporary folder (see [Quickstart](quickstart.md#4-find-the-recorded-files)).
 
 ## The files
 

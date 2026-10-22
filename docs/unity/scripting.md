@@ -69,7 +69,7 @@ public class TrialsData : CustomDataClass
 | ------ | ------- |
 | `string SessionTime { get; }` | The session timestamp used as the file prefix. |
 | `string GetOutputDirectory()` | Absolute path of the current session folder. |
-| `UniTask StartBodyTrackingAsync(BodyJointSet, BodyTrackingFidelity2)` | Starts Meta body tracking (defaults: full-body skeleton, high fidelity). |
+| `UniTask StartBodyTrackingAsync(BodyJointSet, BodyTrackingFidelity2)` | Starts Meta body tracking (defaults: upper-body skeleton, high fidelity). |
 | `event Action<ContinuousSample> OnContinuousSample` | Fires once per tick before the continuous row is written — hook to mirror data live. |
 | `event Action<FaceExpressionSample> OnFaceExpressionSample` | Same, for the face row. |
 | Inspector: `recordingOptions`, `recordFaceExpressions`, `exportInEditor`, `saveFilePath`, `csvDelimiter` | Configure what and where to record; see [Recording](recording.md). |

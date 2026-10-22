@@ -24,7 +24,7 @@ from resxr import (
 ## `run`
 
 ```python
-def run(config_path: str = "config/pipeline_config.yaml") -> None
+def run(config_path: str = "config/pipeline_config.yaml") -> RunResult
 ```
 
 Runs the complete pipeline for every session named in the config (or auto-discovered). This is the same code path as the `resxr` CLI.
@@ -32,10 +32,23 @@ Runs the complete pipeline for every session named in the config (or auto-discov
 ```python
 import resxr
 
-resxr.run(config_path="config/pipeline_config.yaml")
+result = resxr.run(config_path="config/pipeline_config.yaml")
+print(result.exit_code)
+for outcome in result.skipped:
+    print(outcome.source_dir, outcome.reason)
 ```
 
-It returns `None`; the result is the BIDS dataset written to `output.bids_root`. Individual session failures are logged and skipped.
+The BIDS dataset is written to `output.bids_root`. `run` raises a `ConfigurationError` before any session is read when the configuration is invalid (see [Configuration errors](configuration.md#configuration-errors)). A session that fails does not raise: it is logged, skipped, its output is removed, and it is listed in the returned `RunResult` (`resxr.pipeline.RunResult`). A `KeyboardInterrupt` still stops the run.
+
+| `RunResult` member | Holds |
+| ------------------ | ----- |
+| `sessions` | One `SessionOutcome` per session found, in processing order. |
+| `processed` / `skipped` | The sessions that were processed / skipped. |
+| `exit_code` | `0` when every session found was processed; `1` when a session was skipped or none was found. |
+
+Each `SessionOutcome` has `source_dir`, `subject_id`, `session_label`, `processed`, `reason` (why a skipped session was skipped), `warnings` and `errors` (the WARNING and ERROR messages logged while the session was processed; warnings are not counted when logging shows errors only, as with `-q`), and `checks_not_run` (a list of `CheckNotRun` with `check`, `stream` and `reason`). The same information is logged as the [run summary](cli.md#run-summary).
+
+Called from Python without logging configured, `run` prints the WARNING and ERROR messages to standard error (the message text only). To see the progress (INFO) lines too, configure logging first, for example `logging.basicConfig(level=logging.INFO)`; each message is then printed once, through that configuration.
 
 ## `PipelineConfig`
 
@@ -50,7 +63,7 @@ print(config.output.bids_root)
 print([name for name, sys in config.systems.items() if sys.enabled])
 ```
 
-`from_yaml(path)` raises a `ConfigurationError` if the file is missing, unparseable, empty, or fails validation. See the [Configuration Reference](configuration.md) for every field. Helpers include `is_system_enabled(name)` and, on the `validation` sub-config, `get_column_groups(check_name, default_columns=...)`.
+`from_yaml(path)` raises a `ConfigurationError` if the file is missing, unparseable, empty, or fails validation (a missing required key, a wrong type, or a key the configuration does not define). The further checks of a run (check and tracking-system names, settings keys, labels, session mappings, `input.data_dir`) are in `resxr.pipeline.load_config(path)`, which `run` and `--dry-run` call. See the [Configuration Reference](configuration.md) for every field. Helpers include `is_system_enabled(name)` and, on the `validation` sub-config, `get_column_groups(check_name, default_columns=...)`. The models of the sections (for example `BIDSConfig`, `ReferenceFrameConfig` and `TrackingSpaceFrameConfig`) can be imported from `resxr.core`.
 
 ## Core data structures
 
@@ -62,7 +75,7 @@ An enum of the supported systems: `HEAD`, `HANDS`, `EYES`, `FACE`, `BODY`, `CONT
 
 ### `Session`
 
-The per-recording carrier. Key attributes: `session_id`, `subject_id`, `session_label`, `metadata`, `streams` (`dict[TrackingSystem, TrackingStream]`), the `raw_*_data` frames, `custom_tables`/`custom_tables_data`, and `merged_events_data`. Useful members:
+The per-recording carrier. Key attributes: `session_id`, `subject_id`, `session_label`, `metadata`, `streams` (`dict[TrackingSystem, TrackingStream]`), the `raw_*_data` frames, `custom_tables`/`custom_tables_data`, `motion_time_zero` (the first valid `timeSinceStartup` of the continuous data, from which `latency_global` and the event onsets count), and `merged_events_data`. Useful members:
 
 | Member | Returns |
 | ------ | ------- |
@@ -71,11 +84,12 @@ The per-recording carrier. Key attributes: `session_id`, `subject_id`, `session_
 | `all_flags` | All quality flags across streams, sorted by start time. |
 | `total_duration_seconds` | Longest stream duration. |
 | `total_warning_count` / `total_error_count` | Flag tallies. |
-| `masked_percentage` | Fraction of time masked (overlap-aware). |
+| `masked_percentage` | Percentage of `total_duration_seconds` covered by flags marked maskable, with overlapping flags counted once. |
+| `checks_not_run` | Enabled checks that produced no result for a stream, as `CheckNotRun` entries (`check`, `stream`, `reason`); see [Checks not run](validation.md#checks-not-run). |
 
 ### `TrackingStream`
 
-One system's data. Attributes include `system`, `data` (raw), `clean_data` (post-masking), `quality_flags`, `sampling_frequency` (expected), `sampling_frequency_effective` (measured), and `channel_count`. Useful properties: `duration_seconds`, `row_count`, `warning_count`/`error_count`, and `get_output_data()` (returns `clean_data` if set, else `data`).
+One system's data. Attributes include `system`, `data` (raw), `clean_data` (post-masking), `quality_flags`, `sampling_frequency` (expected), `sampling_frequency_effective` (measured), and `channel_count`. Useful properties: `duration_seconds`, `row_count`, `warning_count`/`error_count`, and `get_output_data()` (returns `clean_data` if set, else `data`). `sample_times()` returns the stream's samples: the distinct finite, non-zero values of its clock from the recording onset, from which the effective rate and the [`sampling_rate`](validation.md#sampling_rate) check's irregularity test are computed.
 
 ### `QualityFlag`
 
@@ -104,17 +118,17 @@ print(session.raw_continuous_data.shape)
 
 ## Exceptions
 
-All pipeline errors derive from `ResXRError` (importable from `resxr.core`). Catching it handles any pipeline failure:
+All pipeline errors derive from `ResXRError` (importable from `resxr.core`). `run` does not raise a session's errors: the session is skipped and listed in the `RunResult`. It raises a `ConfigurationError` before any session when the configuration is invalid, and an error outside the sessions (for example while writing the dataset-level files) propagates:
 
 | Exception | Raised when |
 | --------- | ----------- |
 | `ResXRError` | Base class for all of the below. |
 | `ConfigurationError` | Config is missing, malformed, empty, or invalid. |
-| `DataLoadError` | An input file cannot be loaded or parsed. |
-| `MissingDataError` | A required file (metadata or continuous CSV) is absent. |
-| `ValidationError` | Data fails a critical validation check. |
+| `DataLoadError` | An input file cannot be loaded or parsed, or a stream cannot be timed. |
+| `MissingDataError` | A required file (metadata or continuous CSV) or the session folder is absent. |
+| `ValidationError` | Not raised by the pipeline's own code. |
 | `BIDSWriteError` | A BIDS output file cannot be written. |
-| `ColumnMappingError` | Column mapping/splitting fails. |
+| `ColumnMappingError` | Not raised by the pipeline's own code. |
 
 ```python
 from resxr import run

@@ -35,7 +35,7 @@ public interface IContinuousCollector : IDisposable
 Because you are expected to edit the core scripts directly (the template has no plugin layer), wiring a new collector in means two small edits: add your columns to the continuous schema in `SchemaFactories.BuildContinuousDataV2` (in `Core Infrastructure/SchemaBuilder.cs`), and register `new MyCollector()` in the collector list that `ResXRDataManager` builds in `DoInAwake()`, ideally gated on a flag you add to `RecordingOptions`. Follow the existing collectors under `Assets/ResXR/Base Scene/ResXRDataManager/Collectors/` as templates — `SystemStatusCollector` is a compact example.
 
 !!! tip "Keep columns pipeline-friendly"
-    The pipeline routes continuous columns to tracking systems by **name prefix** (`Node_Head_*`, `LeftHand_*`, and so on). If you want your columns to join an existing system, match its prefix; if you want a new system, the pipeline can be configured to recognize it. See [Input Data Format → column mapping](../python/input-data.md#how-columns-map-to-tracking-systems).
+    The pipeline routes continuous columns to tracking systems by **name prefix** (`Node_Head_*`, `LeftHand_*`, and so on). If you want your columns to join an existing system, match its prefix. A new tracking system cannot be added through the pipeline's configuration: the six systems and their prefixes are defined in the pipeline's code (`TrackingSystem` and `SYSTEM_COLUMN_PREFIXES` in `src/resxr/core/constants.py`), and its configuration accepts only those six names. Columns with no known prefix are not exported to BIDS; they stay in `sourcedata/`, and a warning lists them. See [Input Data Format → column mapping](../python/input-data.md#how-columns-map-to-tracking-systems).
 
 ## Running several experiments in one project
 
@@ -54,6 +54,6 @@ Every enabled subsystem runs its collector on **every physics tick**, and each r
 - **Enable only what you need.** Hands and body produce wide schemas (every bone/joint), and **per-eye gaze** (`Include Separate Eyes Gaze`) triples the eye raycasts per frame (three rays instead of one). Leave subsystems off if your study does not use them.
 - **Mind the Fixed Timestep.** Halving it doubles the rows, the CPU work, and the file size. 100 Hz (`0.01` s) is a sensible default; raise it only with reason. Set it in **Project Settings → Time → Fixed Timestep**.
 - **Immediate flushing trades throughput for safety.** Writing and flushing each row guarantees you never lose more than one tick, at the cost of per-tick disk I/O. This is usually the right trade for research data.
-- **`Include Performance` is reserved.** `OVRPerformanceCollector` returns empty data on the OpenXR backend, so leave it off unless you switch backends and need motion-to-photon latency.
+- **`Include Performance` is reserved.** The template ships with it on, but it writes no columns: the motion-to-photon latency column was removed from the schema, so `OVRPerformanceCollector` has no column to fill. The collector is kept for future metrics.
 
 A practical baseline for a Quest Pro eye/face study is **Nodes + Eyes + Gaze + Face** at 100 Hz, adding **Hands** or **Body** only when the task requires them.

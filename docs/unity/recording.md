@@ -19,7 +19,7 @@ Most toggles live in the **What to record (ContinuousData)** group on `ResXRData
 | **Eyes — combined gaze** | `Include Gaze` | `OVREyesCollector` | The cyclopean (averaged) gaze ray: the world-space hit point and the focused object's name. |
 | **Eyes — per-eye gaze** | `Include Separate Eyes Gaze` | `OVREyesCollector` | Separate left/right gaze hit points and focused objects. Also makes the eye tracker cast three rays per frame instead of one. |
 | **Hands** | `Include Hands` | `OVRHandsCollector` | Per hand: tracking status flags, root pose, scale, overall and per-finger confidence, and every hand-skeleton bone pose. |
-| **Body** | `Include Body` | `OVRBodyCollector` | Full-body skeleton: per-joint pose and tracking flags, plus confidence, fidelity, and calibration status. |
+| **Body** | `Include Body` | `OVRBodyCollector` | Upper-body skeleton: per-joint pose and tracking flags, plus confidence, fidelity, and calibration status. |
 | **System status** | `Include System Status` | `SystemStatusCollector` | Recenter events and counts, tracking-origin changes, the tracking transform, user-present, and tracking-lost. |
 | **Performance** | `Include Performance` | `OVRPerformanceCollector` | Reserved — currently writes **no columns** (the motion-to-photon latency column was removed from the schema; the collector is kept for future metrics). Returns empty on the OpenXR backend. |
 | **Custom transforms** | `Custom Transforms To Record` (object list) | `CustomTransformsCollector` | World position and rotation of any scene objects you drag in — one set of columns per object. |
@@ -29,7 +29,7 @@ Most toggles live in the **What to record (ContinuousData)** group on `ResXRData
     The face collector records ~70 **expression weights** — numeric activations (0–1) of individual facial movements such as a brow raise or a jaw drop, following Meta's Face Tracking set. (A *blendshape* is the mesh deformation each weight would drive on an avatar.) They are written to the dedicated face file, not the continuous file.
 
 !!! warning "Body tracking is an estimate, not a body sensor"
-    Quest headsets have no body sensor. With `Include Body` on, Meta's SDK *infers* a full-body skeleton from head and hand poses for smooth avatar animation — it is not ground-truth motion capture. The template ships with it on, but the in-editor tooltip recommends leaving it **off** unless your analysis genuinely needs the estimated joints. Treat body joints accordingly.
+    Quest headsets have no body sensor. With `Include Body` on, Meta's SDK *infers* an upper-body skeleton from head and hand poses for smooth avatar animation — it is not ground-truth motion capture. Body is off in the `ResXR_DataManager` prefab and in Base Scene, and on in Base Scene With Meta Interactions, the scene enabled for builds by default; the in-editor tooltip recommends leaving it **off** unless your analysis genuinely needs the estimated joints. Treat body joints accordingly.
 
 ### Enabling a subsystem
 
@@ -43,12 +43,12 @@ Controllers do not have a dedicated toggle: their poses come in through **Nodes*
 
 Tracking data from the Meta runtime arrives in **tracking space** — a right-handed coordinate system whose origin is the play-area boundary you set up on the headset. Unity's **world space** is left-handed. If the two were mixed, positions and rotations would not line up.
 
-`ResXRDataManager` resolves this with the static `TrackingSpaceConverter` utility, initialized at startup from the `OVRCameraRig` (Meta's headset-and-controllers rig object in the scene). Every world-space position and rotation written to `*_ContinuousData.csv` — except hand-bone poses, which stay hand-local (see below) — is passed through it, so those columns are consistent Unity world-space values regardless of recenter events during the session. Two frames are used:
+`ResXRDataManager` resolves this with the static `TrackingSpaceConverter` utility, initialized at startup from the `OVRCameraRig` (Meta's headset-and-controllers rig object in the scene). The node, eye-orientation, hand-root, body-joint and tracking-transform poses that the template reads from the SDK are passed through it, with the rig's position and rotation taken at startup, so those columns are Unity world-space values. The hand-bone poses are not converted (below). Gaze-hit points and custom transforms come from Unity's own scene and are in world space already. The metadata describes two frames:
 
-- **UnityWorld** — left-handed, Euler order `ZXY`, axes `+X right, +Y up, +Z forward`. This is the frame for node, gaze-hit, body, and custom-transform columns.
-- **HandLocal** — right-handed, Euler order `ZXY`, hand-local axes relative to the hand root. Hand **bone** poses stay in this frame (they are not converted to world space) because they are most useful relative to the wrist.
+- **UnityWorld**: left-handed, Euler order `ZXY`, axes `+X right, +Y up, +Z forward`. This is the frame for node, hand-root, gaze-hit, body, and custom-transform columns.
+- **HandLocal**: right-handed, Euler order `ZXY`, described as "hand-local axes relative to hand root (tracking space)". The hand-bone columns (`Left_XRHand_*`, `Right_XRHand_*`) do not follow this description: the template writes the bone poses as the SDK returns them, without the conversion, so they are in the SDK's tracking space (right-handed, +X right, +Y up, -Z forward), not relative to the hand root. The Python pipeline detects the bones' frame for each hand from the data and labels those channels `tracking_space` in `channels.tsv`, as it does for all three demonstration sessions (see [BIDS Output](../python/bids-output.md#channelstsv)).
 
-Both frames, the Euler order (`ZXY`), the rotation units (`degrees`), and the headset's `tracking_origin_type` (`EyeLevel`, `FloorLevel`, or `Stage`) are written into `*_SessionMetadata.json` so the pipeline can describe each channel correctly. The conversion math is documented in `Assets/ResXR/Base Scene/ResXRDataManager/Utilities/TRACKING_TO_WORLD_CONVERSION.md`.
+Both frames, the Euler order (`ZXY`), the rotation units (`degrees`), and the headset's `tracking_origin_type` (`EyeLevel`, `FloorLevel`, or `Stage`) are written into `*_SessionMetadata.json`. The pipeline does not read them: it takes the frame description of the channels from its configuration ([`bids.reference_frame`](../python/configuration.md#bidsreference_frame)) and detects the hand-bone frame from the data. The conversion math is documented in `Assets/ResXR/Base Scene/ResXRDataManager/Utilities/TRACKING_TO_WORLD_CONVERSION.md`.
 
 !!! note "Quaternions and Euler angles"
     Rotations are stored as **quaternions** in the continuous data (the `_qx/_qy/_qz/_qw` columns) because they are unambiguous and interpolate cleanly. The `ZXY` Euler order in the metadata tells downstream tools how to decompose them into angles if needed.
