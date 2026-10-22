@@ -19,7 +19,7 @@ Most toggles live in the **What to record (ContinuousData)** group on `ResXRData
 | **Eyes — combined gaze** | `Include Gaze` | `OVREyesCollector` | The cyclopean (averaged) gaze ray: the world-space hit point and the focused object's name. |
 | **Eyes — per-eye gaze** | `Include Separate Eyes Gaze` | `OVREyesCollector` | Separate left/right gaze hit points and focused objects. Also makes the eye tracker cast three rays per frame instead of one. |
 | **Hands** | `Include Hands` | `OVRHandsCollector` | Per hand: tracking status flags, root pose, scale, overall and per-finger confidence, and every hand-skeleton bone pose. |
-| **Body** | `Include Body` | `OVRBodyCollector` | Full-body skeleton: per-joint pose and tracking flags, plus confidence, fidelity, and calibration status. |
+| **Body** | `Include Body` | `OVRBodyCollector` | Upper-body skeleton: per-joint pose and tracking flags, plus confidence, fidelity, and calibration status. |
 | **System status** | `Include System Status` | `SystemStatusCollector` | Recenter events and counts, tracking-origin changes, the tracking transform, user-present, and tracking-lost. |
 | **Performance** | `Include Performance` | `OVRPerformanceCollector` | Reserved — currently writes **no columns** (the motion-to-photon latency column was removed from the schema; the collector is kept for future metrics). Returns empty on the OpenXR backend. |
 | **Custom transforms** | `Custom Transforms To Record` (object list) | `CustomTransformsCollector` | World position and rotation of any scene objects you drag in — one set of columns per object. |
@@ -29,7 +29,7 @@ Most toggles live in the **What to record (ContinuousData)** group on `ResXRData
     The face collector records ~70 **expression weights** — numeric activations (0–1) of individual facial movements such as a brow raise or a jaw drop, following Meta's Face Tracking set. (A *blendshape* is the mesh deformation each weight would drive on an avatar.) They are written to the dedicated face file, not the continuous file.
 
 !!! warning "Body tracking is an estimate, not a body sensor"
-    Quest headsets have no body sensor. With `Include Body` on, Meta's SDK *infers* a full-body skeleton from head and hand poses for smooth avatar animation — it is not ground-truth motion capture. The template ships with it on, but the in-editor tooltip recommends leaving it **off** unless your analysis genuinely needs the estimated joints. Treat body joints accordingly.
+    Quest headsets have no body sensor. With `Include Body` on, Meta's SDK *infers* an upper-body skeleton from head and hand poses for smooth avatar animation — it is not ground-truth motion capture. The template ships with it on, but the in-editor tooltip recommends leaving it **off** unless your analysis genuinely needs the estimated joints. Treat body joints accordingly.
 
 ### Enabling a subsystem
 
