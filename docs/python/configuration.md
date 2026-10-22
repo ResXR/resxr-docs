@@ -86,7 +86,7 @@ session_mappings:
     handedness: "R"
 ```
 
-The `sub-` and `ses-` prefixes are added for you, so write `subject_id: "01"`, not `"sub-01"`. Each `subject_id`/`session_label` pair and each folder may appear only once. `participants.tsv` has one row per subject, so every mapping of one subject must give the same `age`, `sex` and `handedness`, or none may give them; a value given in one mapping and left out of another counts as different, while an explicit `"n/a"` counts as left out. Each of these is a [configuration error](#configuration-errors).
+The `sub-` and `ses-` prefixes are added for you, so write `subject_id: "01"`, not `"sub-01"`. Each `subject_id`/`session_label` pair and each folder may appear only once. Two `subject_id` values that differ only in letter case (`P01` and `p01`), or two `session_label` values of one subject that do, are not allowed either, because the default Windows and macOS file systems would write both into one folder; another subject may use either spelling of a session label. `participants.tsv` has one row per subject, so every mapping of one subject must give the same `age`, `sex` and `handedness`, or none may give them; a value given in one mapping and left out of another counts as different, while an explicit `"n/a"` counts as left out. Each of these is a [configuration error](#configuration-errors).
 
 ---
 
@@ -314,6 +314,7 @@ A run checks the configuration before any session is read, and `--dry-run` runs 
 - a sampling rate that is not positive, or a tracking system that `systems` does not disable without a `sampling_frequencies` entry;
 - a `subject_id`, `session_label` or `output.task_name` that holds anything but letters and digits;
 - two `session_mappings` with the same `subject_id` and `session_label`, or one folder mapped twice;
+- `subject_id` values that differ only in letter case, or `session_label` values of one subject that do;
 - `session_mappings` of one subject that give different `age`, `sex` or `handedness` values;
 - an `input.data_dir` that is not an existing folder.
 
