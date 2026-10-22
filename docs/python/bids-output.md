@@ -141,11 +141,11 @@ One per session (both tiers). Lists each motion file with its acquisition time:
 | Column | Value |
 | ------ | ----- |
 | `filename` | `motion/<motion filename>` |
-| `acq_time` | The recording's UTC start from `utc_start_iso8601`, as `YYYY-MM-DDThh:mm:ss.ffffffZ` (the recorded fraction of a second, to six digits, and `Z` for UTC), or `n/a` if absent or unparseable. |
+| `acq_time` | The recording's UTC start from `utc_start_iso8601`, as `YYYY-MM-DDThh:mm:ss.ffffffZ` (the recorded fraction of a second, to six digits, and `Z` for UTC), or `n/a` if absent or unparseable. A time recorded with an offset is converted to UTC: `2026-06-10T21:22:45.5772210+03:00` gives `2026-06-10T18:22:45.577221Z`. |
 
 ## `participants.tsv` / `participants.json`
 
-Dataset-level. `participants.tsv` has one row per subject (`participant_id`, `age`, `sex`, `handedness`), drawn from the [session mapping](configuration.md#session_mappings) of the subject's first processed session (`n/a` where unset). It lists the subjects with at least one session processed in this run. Every mapping of a subject must give the same values, or the run stops with a [configuration error](configuration.md#configuration-errors). `participants.json` documents those columns, including the `sex` levels (`M`/`F`) and `handedness` levels (`R`/`L`/`A`).
+Dataset-level. `participants.tsv` has one row per subject (`participant_id`, `age`, `sex`, `handedness`), drawn from the [session mapping](configuration.md#session_mappings) of the subject's first processed session (`n/a` where unset). It lists the subjects with at least one session processed in this run; when `bids_root` holds `sub-*` folders that it does not list (for example from an earlier run with other session mappings), a warning names them, and a rerun with every session mapping lists them all. Every mapping of a subject must give the same values, or the run stops with a [configuration error](configuration.md#configuration-errors). `participants.json` documents those columns, including the `sex` levels (`M`/`F`) and `handedness` levels (`R`/`L`/`A`).
 
 ## `.bidsignore`
 
