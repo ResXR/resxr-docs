@@ -54,6 +54,6 @@ Every enabled subsystem runs its collector on **every physics tick**, and each r
 - **Enable only what you need.** Hands and body produce wide schemas (every bone/joint), and **per-eye gaze** (`Include Separate Eyes Gaze`) triples the eye raycasts per frame (three rays instead of one). Leave subsystems off if your study does not use them.
 - **Mind the Fixed Timestep.** Halving it doubles the rows, the CPU work, and the file size. 100 Hz (`0.01` s) is a sensible default; raise it only with reason. Set it in **Project Settings → Time → Fixed Timestep**.
 - **Immediate flushing trades throughput for safety.** Writing and flushing each row guarantees you never lose more than one tick, at the cost of per-tick disk I/O. This is usually the right trade for research data.
-- **`Include Performance` is reserved.** `OVRPerformanceCollector` returns empty data on the OpenXR backend, so leave it off unless you switch backends and need motion-to-photon latency.
+- **`Include Performance` is reserved.** The template ships with it on, but it writes no columns: the motion-to-photon latency column was removed from the schema, so `OVRPerformanceCollector` has no column to fill. The collector is kept for future metrics.
 
 A practical baseline for a Quest Pro eye/face study is **Nodes + Eyes + Gaze + Face** at 100 Hz, adding **Hands** or **Body** only when the task requires them.
